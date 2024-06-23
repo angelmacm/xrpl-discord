@@ -26,10 +26,10 @@ async def on_ready():
 
 # Airdrop Command:
 # Parameters:
-#       CSV File: .csv attachment consists of addresses and how many to send to them
-#       Seed Phrase:
-#       Currency:
-#       Memo:
+#       CSV File: [Required] .csv attachment consists of addresses and how many to send to them
+#       Seed Phrase: [Required] sender's seed phrase to be used as a source of funds.
+#       Currency: [Optional] Currency Code for the funds that would be transferred. If not set, default to XRP
+#       Memo: [Optional] A quick message that would be transferred along with the payment
 @slash_command(
         name="airdrop",
         description="Airdrop Coins to users",
@@ -56,38 +56,47 @@ async def on_ready():
             )
         ])
 async def airdrop(ctx: InteractionContext):
-    await ctx.defer()
+    await ctx.defer() # Defer the response to wait for the function to run.
         
     csvfile = ""
-    statusMessage = await ctx.send(content="Checking parameters...")
+    statusMessage = await ctx.send(content="Checking parameters...") # Give a quick status update
+    
+    # Start of parameter checking
+    
+    # Check the attachment if its suffix is .csv
     if ctx.kwargs['csv_file'].filename.split(".")[-1] != 'csv':
         await statusMessage.edit(content=f"{statusMessage.content}\nError: Make sure that the file ends with .csv")
         return
     else:
+        # Download the contents of the attachment
         async with ClientSession() as session:
             async with session.get(ctx.kwargs['csv_file'].url) as response:
                 csvfile = await response.text()
-         
+    
+    # Parse the contents of the attachments
     recipientAddresses = list(csvReader(StringIO(csvfile)))
     
+    # Check if the seed is valid and register it as the wallet
     seedResult = await xrplInstance.registerSeed(ctx.kwargs['seed_phrase'])
     if not seedResult['result']:
         await statusMessage.edit(content=f"{statusMessage.content}\n[{seedResult['error']}] error while registering wallet with seed: {ctx.kwargs['seed_phrase']}")
         return
         
-     
+    # Check if currency is given, else default to XRP
     if "currency" in ctx.kwargs.keys():
         currency = ctx.kwargs['currency']
     else:
         currency = "XRP"
-        
+    
+    # Check if memo is given, ignore if not.
     if "memo" in ctx.kwargs.keys():
         memos = ctx.kwargs['memo']
     else:
         memos = None
 
-    # Confirm the details of the airdrop
     recipientNum = len(recipientAddresses)
+    
+    # Confirm the details of the airdrop
     statusMessage = await statusMessage.edit(content=
         f"**Please confirm the details of the airdrop:**\n"
         f"XRP Network: **{'Testnet' if xrplInstance.getTestMode() else 'Mainnet'}**\n"
@@ -107,11 +116,15 @@ async def airdrop(ctx: InteractionContext):
         ]
     )
 
+    # Function to receive the value when the confirmatory buttons are pressed
     def check(buttonCTX: Component):
         return buttonCTX.ctx.author.id == ctx.author.id and buttonCTX.ctx.custom_id in ["confirm", "cancel"]
 
     try:
+        # Send the Confirmation message and wait for 60s for answer
         buttonCTX: Component = await client.wait_for_component(components=statusMessage.components, check=check, timeout=60.0)
+        
+        # Remove the embeds then remove the components and reply according to what response the app got
         await statusMessage.suppress_embeds()
         if buttonCTX.ctx.custom_id == "cancel":
             await statusMessage.edit(content=f"{statusMessage.content}\n\nAirdrop cancelled.", components=[], embed = None)
@@ -121,11 +134,25 @@ async def airdrop(ctx: InteractionContext):
         await statusMessage.edit(content=f"{statusMessage.content}\n\nAirdrop cancelled due to timeout.", components=[], embed = None)
         return
 
+    # Give a quick status update
     await statusMessage.edit(content=f"{statusMessage.content}\nStarting to send to {len(recipientAddresses)} addresses\n")
+    
+    # Mini Statistics
     successSend = 0
     errorCount = 0
+    
+    # Save a base message to rerender the results
     baseMessage = statusMessage.content
+    
+    # loop through the addresses
     for row in recipientAddresses:
+        
+        # prevent parsing empty and incomplete indexes
+        if len(row)>1:
+            continue
+        
+        # Parse the current row then perform the XRPL transaction
+        # TODO: Make these generate multiple thread for faster airdrop
         address, value = row
         try:
             result = await xrplInstance.sendCoin(address = address, value = value, coinHex = currency, memos = memos)
@@ -140,9 +167,12 @@ async def airdrop(ctx: InteractionContext):
                 errorCount += 1
         except Exception as e:
             continue
-    
+    # Make a final confirmation message
     await statusMessage.edit(content=f"{baseMessage}\n\n{successSend}/{recipientNum} Airdrop Complete!")
     
+# Network Command:
+# Parameters: 
+#   testmode: [Required] Boolean if the network should be configure to testnet    
 @slash_command(
         name="network",
         description="Configure XRP network",
@@ -154,14 +184,17 @@ async def airdrop(ctx: InteractionContext):
             )
             ])
 async def setTestMode(ctx: InteractionContext):
-    await ctx.defer()
+    await ctx.defer() # Defer the response to wait for the function to run.
+    
+    # Parse the argument and set it to the XRPL Instance
     testMode = ctx.kwargs['testmode']
     xrplInstance.setTestMode(testMode)
+    
+    # Check if the XRPL Instace successfully set the correct mode and send the result to the chat
     if xrplInstance.getTestMode() == testMode:
         await ctx.send(content=f"Bot configure to XRP {'Testnet' if testMode else 'Mainnet'}")
     else:
         await ctx.send(content=f"Unknown error tring to set testMode={testMode}")
-    print(f"{xrplInstance.getTestMode()} == {testMode}: {xrplInstance.getTestMode() == testMode}")
         
 if __name__ == "__main__":
     client.start()

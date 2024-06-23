@@ -12,22 +12,33 @@ from configparser import ConfigParser
 
 class XRPClient:
     def __init__(self, verbose=False) -> None:
+        # Parse the configuration
         self.config = ConfigParser()
         self.config.read("../config.ini")
+        
+        # Set an initial test mode based on the configuration
         self.setTestMode(self.config.getboolean("XRPL",'test_mode'))
+        
+        # Save the last coin checked and its issuer to prevent frequent checking of issuer on the same coin
         self.lastCoinChecked = ""
         self.lastCoinIssuer = ""
+        
+        # Verbosity for debugging purposes
         self.verbose = verbose
 
     async def sendCoin(self, address: str, value: float, coinHex: str = "XRP", memos: str | None = None) -> dict:
-        print() if self.verbose else None
+        print() if self.verbose else None # For debugging purposes
+        # Prepare the result format
         funcResult = {'result': False, 'error': None}
+        
+        # if memos are given, properly format it.
         if memos:
             memoData = memos.encode('utf-8').hex()
         
-        print("Preparing payment package...") if self.verbose else None
+        print("Preparing payment package...") if self.verbose else None # For debugging purposes
         try:
             if coinHex.upper() == "XRP":
+                # Use xrp_to_drops if the currency is XRP
                 amount_drops = xrp_to_drops(float(value))
                 payment = Payment(
                     account=self.wallet.classic_address,
@@ -36,13 +47,16 @@ class XRPClient:
                     memos= [Memo(memo_data=memoData)] if memos else None
                 )
             else:
+                # Get the coin issuer from the trustline that is set on the sender's account
                 coinIssuer = await self.getCoinIssuer(coinHex)
                 
+                # If the issuer is not available on the sender, return
                 if coinIssuer is None:
-                    funcResult["error"] = "TrustlineNotSet"
+                    funcResult["error"] = "TrustlineNotSetOnSender"
                     funcResult["result"] = False
                     return funcResult
                 
+                # Prepare the payment transaction format along with the given fields
                 payment = Payment(
                     account=self.wallet.classic_address,
                     destination=address,
@@ -54,19 +68,20 @@ class XRPClient:
                     memos= [Memo(memo_data=memoData)] if memos else None
                 )
             
-            # Retry logic with delay between retries
+            # Retry logic should there be a network problem
             retries = 3
             for attempt in range(retries):
-                print(f"Attempt #{attempt+1} in sending {value} {coinHex} to {address}") if self.verbose else None
+                print(f"Attempt #{attempt+1} in sending {value} {coinHex} to {address}") if self.verbose else None # For debugging purposes
                 try:
                     async with AsyncWebsocketClient(self.xrpLink) as client:
                         # Sign the transaction
                         signed_tx = await autofill_and_sign(transaction=payment, wallet=self.wallet, client=client)
                         
-                        # Submit the signed transaction
+                        # Submit the signed transaction to be validated
                         result = await submit_and_wait(transaction=signed_tx, client=client)
                     
                     if result.is_successful():
+                        print("Sucess")  if self.verbose else None # For debugging purposes
                         funcResult["result"] = True
                         return funcResult
                     else:
@@ -74,61 +89,40 @@ class XRPClient:
                 except Exception as e:
                     
                     if "noCurrent" in str(e) or "overloaded" in str(e):
-                        print(f"Attempt {attempt + 1} failed: {e}. Retrying...") if self.verbose else None
+                        print(f"Attempt {attempt + 1} failed: {e}. Retrying...") if self.verbose else None # For debugging purposes
                         await sleep(5)  # Wait before retrying
                     else:
                         raise e
             return False
         
         except Exception as e:
-            print(f"Error processing {value} {coinHex} for {address}: {str(e)}") if self.verbose else None
+            print(f"Error processing {value} {coinHex} for {address}: {str(e)}") if self.verbose else None # For debugging purposes
             funcResult['result'] = False
             funcResult['error'] = e
             return funcResult
     
-    async def pathFindAccounts(self, issuer, destination, value, currency):
-        
-        coinIssuer = await self.getCoinIssuer(currency)
-        
-        # Prepare RipplePathFind request
-        path_find_request = RipplePathFind(
-            source_account=issuer,
-            destination_account=destination,
-            destination_amount=IssuedCurrencyAmount(
-                currency=currency,
-                value=str(value),
-                issuer=coinIssuer
-            )
-        )
-
-        # Send the path find request
-        async with AsyncWebsocketClient(self.xrpLink) as client:
-            pathResponse = await client.request(path_find_request)
-        
-        if "alternatives" in pathResponse.result and len(pathResponse.result["alternatives"]) > 0:
-            paths = pathResponse.result["alternatives"][0]["paths_computed"]
-        else:
-            raise Exception("Path Not Found")
-        return paths
-    
     async def getCoinIssuer(self, currency: str) -> str | None:
         
-        # To prevent multiple request of the same coin
+        # To prevent multiple request of the same coin, return the last value
         if currency == self.lastCoinChecked:
             return self.lastCoinIssuer
         
         try:
+            # Prepare the Account Request Transaction
             account_lines = AccountLines(
                 account=self.wallet.classic_address,
                 ledger_index="validated"
             )
             
+            # Request the transaction
             async with AsyncWebsocketClient(self.xrpLink) as client:
                 response = await client.request(account_lines)
 
+            # Check if the proper key is found in the response
             if "lines" not in response.result.keys():
                 return
             
+            # Iterate on all the trustlines until the coin is matched. Return the account the trustline is set to.
             lines = response.result["lines"]
             for line in lines:
                 
@@ -152,11 +146,11 @@ class XRPClient:
         
     async def registerSeed(self, seed) -> dict:
         try:
-            print("Registering Wallet...") if self.verbose else None
+            print("Registering Wallet...") if self.verbose else None # For debugging purposes
             self.wallet = Wallet.from_seed(seed)
             return {"result":True, "error": "success"}
         except Exception as e:
-            print(f"Error in wallet registration") if self.verbose else None
+            print(f"Error in wallet registration") if self.verbose else None # For debugging purposes
             return {"result":False, "error":e}
     
     def getTestMode(self) -> bool:
