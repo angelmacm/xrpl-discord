@@ -143,9 +143,14 @@ class XRPClient:
         else:
             self.xrpLink = "wss://s1.ripple.com/"
         
-    async def registerSeed(self, seed) -> None:
+    async def registerSeed(self, seed) -> dict:
         try:
             print("Registering Wallet...") if self.verbose else None
             self.wallet = Wallet.from_seed(seed)
-        except:
+            return {"result":True, "error": "success"}
+        except Exception as e:
             print(f"Error in wallet registration") if self.verbose else None
+            return {"result":False, "error":e}
+    
+    def getTestMode(self) -> bool:
+        return self.xrpLink == "wss://s.altnet.rippletest.net:51233/"

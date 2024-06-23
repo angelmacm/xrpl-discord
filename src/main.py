@@ -1,6 +1,6 @@
 from commands.xrpl.xrplCommands import XRPClient
 
-from interactions import Intents, Client, listen, slash_command, slash_attachment_option, slash_str_option, InteractionContext
+from interactions import Intents, Client, listen, slash_command, slash_attachment_option, slash_str_option, InteractionContext, slash_bool_option
 from interactions import Button, ButtonStyle, Embed # Confirmation Imports
 from interactions.api.events import Component
 
@@ -48,7 +48,7 @@ async def airdrop(ctx: InteractionContext):
     await ctx.defer()
         
     csvfile = ""
-
+    statusMessage = await ctx.send(content="Checking parameters...")
     if ctx.kwargs['csv_file'].filename.split(".")[-1] != 'csv':
         await statusMessage.edit(content=f"{statusMessage.content}\nError: Make sure that the file ends with .csv")
         return
@@ -59,10 +59,11 @@ async def airdrop(ctx: InteractionContext):
          
     recipientAddresses = list(csvReader(StringIO(csvfile)))
     
-    if ctx.kwargs['seed_phrase'] is None:
-        await statusMessage.edit(content=f"{statusMessage.content}\nSeed Phrase of the sender is required for the airdrop")
-    else:
-        await xrplInstance.registerSeed(ctx.kwargs['seed_phrase'])
+    seedResult = await xrplInstance.registerSeed(ctx.kwargs['seed_phrase'])
+    if not seedResult['result']:
+        await statusMessage.edit(content=f"{statusMessage.content}\n[{seedResult['error']}] error while registering wallet with seed: {ctx.kwargs['seed_phrase']}")
+        return
+        
      
     if "currency" in ctx.kwargs.keys():
         currency = ctx.kwargs['currency']
@@ -76,8 +77,9 @@ async def airdrop(ctx: InteractionContext):
 
     # Confirm the details of the airdrop
     recipientNum = len(recipientAddresses)
-    statusMessage = await ctx.send(
+    statusMessage = await statusMessage.edit(content=
         f"**Please confirm the details of the airdrop:**\n"
+        f"XRP Network: **{"Testnet" if xrplInstance.getTestMode() else "Mainnet"}**\n"
         f"Currency: **{currency}**\n"
         f"Seed Phrase: **{ctx.kwargs['seed_phrase']}**\n\n"
         f"Number of recipients: **{recipientNum}**\n\n"
@@ -129,5 +131,27 @@ async def airdrop(ctx: InteractionContext):
             continue
     
     await statusMessage.edit(content=f"{baseMessage}\n\n{successSend}/{recipientNum} Airdrop Complete!")
+    
+@slash_command(
+        name="network",
+        description="Configure XRP network",
+        options= [
+            slash_bool_option(
+                description="True or False if it should be configured to testnet",
+                name="testmode",
+                required=True
+            )
+            ])
+async def setTestMode(ctx: InteractionContext):
+    await ctx.defer()
+    testMode = ctx.kwargs['testmode']
+    xrplInstance.setTestMode(testMode)
+    if xrplInstance.getTestMode() == testMode:
+        await ctx.send(content=f"Bot configure to XRP {"Testnet" if testMode else "Mainnet"}")
+    else:
+        await ctx.send(content=f"Unknown error tring to set testMode={testMode}")
+    print(f"{xrplInstance.getTestMode()} == {testMode}: {xrplInstance.getTestMode() == testMode}")
+        
+
 
 client.start()
