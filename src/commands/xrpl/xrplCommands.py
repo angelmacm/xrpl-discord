@@ -14,7 +14,7 @@ class XRPClient:
     def __init__(self, verbose=False) -> None:
         # Parse the configuration
         self.config = ConfigParser()
-        self.config.read("../config.ini")
+        self.config.read("config.ini", encoding='utf-8')
         
         # Set an initial test mode based on the configuration
         self.setTestMode(self.config.getboolean("XRPL",'test_mode'))

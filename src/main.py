@@ -13,7 +13,8 @@ from asyncio import TimeoutError
 from configparser import ConfigParser
 
 config = ConfigParser()
-config.read("../config.ini")
+config.read("config.ini", encoding='utf-8')
+
 intents = Intents.DEFAULT | Intents.MESSAGE_CONTENT
 client = Client(intents=intents, token=config['BOT']['token']) # Transfer this to the 
 
