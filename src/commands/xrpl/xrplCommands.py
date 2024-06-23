@@ -13,7 +13,7 @@ from configparser import ConfigParser
 class XRPClient:
     def __init__(self, verbose=False) -> None:
         self.config = ConfigParser()
-        self.config.read("/../config.ini")
+        self.config.read("../config.ini")
         self.setTestMode(self.config.getboolean("XRPL",'test_mode'))
         self.lastCoinChecked = ""
         self.lastCoinIssuer = ""
