@@ -18,7 +18,7 @@ config.read("config.ini", encoding='utf-8')
 intents = Intents.DEFAULT | Intents.MESSAGE_CONTENT
 client = Client(intents=intents, token=config['BOT']['token']) # Transfer this to the 
 
-xrplInstance = XRPClient()
+xrplInstance = XRPClient(verbose=config['BOT'].getboolean('verbose'))
 
 @listen()
 async def on_ready():
@@ -149,7 +149,7 @@ async def airdrop(ctx: InteractionContext):
     for row in recipientAddresses:
         
         # prevent parsing empty and incomplete indexes
-        if len(row)>1:
+        if len(row)<2:
             continue
         
         # Parse the current row then perform the XRPL transaction
