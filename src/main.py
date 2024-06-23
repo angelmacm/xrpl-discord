@@ -135,7 +135,7 @@ async def airdrop(ctx: InteractionContext):
                 await statusMessage.edit(content=f"{baseMessage}\nSuccess: {successSend}/{recipientNum}")
             else:
                 if errorCount < 5:
-                    await statusMessage.edit(content=f"{baseMessage}\n**{result['error'] if result['error'] else "Unknown"}** error sending to {address}\n")
+                    await statusMessage.edit(content=f"{baseMessage}\n**{result['error'] if result['error'] else 'Unknown'}** error sending to {address}\n")
                     baseMessage = statusMessage.content
                 errorCount += 1
         except Exception as e:
