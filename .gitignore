@@ -4,3 +4,4 @@ Lib
 Include
 src/commands/xrpl/__pycache__
 *.csv
+config.ini

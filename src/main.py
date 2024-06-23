@@ -90,7 +90,7 @@ async def airdrop(ctx: InteractionContext):
     recipientNum = len(recipientAddresses)
     statusMessage = await statusMessage.edit(content=
         f"**Please confirm the details of the airdrop:**\n"
-        f"XRP Network: **{"Testnet" if xrplInstance.getTestMode() else "Mainnet"}**\n"
+        f"XRP Network: **{'Testnet' if xrplInstance.getTestMode() else 'Mainnet'}**\n"
         f"Currency: **{currency}**\n"
         f"Seed Phrase: **{ctx.kwargs['seed_phrase']}**\n\n"
         f"Number of recipients: **{recipientNum}**\n\n"
@@ -158,7 +158,7 @@ async def setTestMode(ctx: InteractionContext):
     testMode = ctx.kwargs['testmode']
     xrplInstance.setTestMode(testMode)
     if xrplInstance.getTestMode() == testMode:
-        await ctx.send(content=f"Bot configure to XRP {"Testnet" if testMode else "Mainnet"}")
+        await ctx.send(content=f"Bot configure to XRP {'Testnet' if testMode else 'Mainnet'}")
     else:
         await ctx.send(content=f"Unknown error tring to set testMode={testMode}")
     print(f"{xrplInstance.getTestMode()} == {testMode}: {xrplInstance.getTestMode() == testMode}")
