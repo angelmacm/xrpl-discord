@@ -13,8 +13,8 @@ from configparser import ConfigParser
 class XRPClient:
     def __init__(self, verbose=False) -> None:
         self.config = ConfigParser()
-        self.config.read("../../../config.ini")
-        self.setTestMode(self.config.getboolean("XRP",'test_mode'))
+        self.config.read("/../config.ini")
+        self.setTestMode(self.config.getboolean("XRPL",'test_mode'))
         self.lastCoinChecked = ""
         self.lastCoinIssuer = ""
         self.verbose = verbose
@@ -126,6 +126,9 @@ class XRPClient:
             async with AsyncWebsocketClient(self.xrpLink) as client:
                 response = await client.request(account_lines)
 
+            if "lines" not in response.result.keys():
+                return
+            
             lines = response.result["lines"]
             for line in lines:
                 

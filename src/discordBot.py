@@ -17,7 +17,7 @@ config.read("../config.ini")
 intents = Intents.DEFAULT | Intents.MESSAGE_CONTENT
 client = Client(intents=intents, token=config['bot']['token']) # Transfer this to the 
 
-xrplInstance = XRPClient(testMode=True, verbose=True)
+xrplInstance = XRPClient()
 
 @listen()
 async def on_ready():
