@@ -8,9 +8,13 @@ from xrpl.utils import xrp_to_drops
 from xrpl.models.requests.account_lines import AccountLines
 from xrpl.models.requests import RipplePathFind
 from asyncio import sleep
+from configparser import ConfigParser
+
 class XRPClient:
-    def __init__(self, testMode: bool = True, verbose=False) -> None:
-        self.setTestMode(testMode)            
+    def __init__(self, verbose=False) -> None:
+        self.config = ConfigParser()
+        self.config.read("../../../config.ini")
+        self.setTestMode(self.config.getboolean("XRP",'test_mode'))
         self.lastCoinChecked = ""
         self.lastCoinIssuer = ""
         self.verbose = verbose
@@ -139,9 +143,9 @@ class XRPClient:
     
     def setTestMode(self, mode = True) -> None:
         if mode:
-            self.xrpLink = "wss://s.altnet.rippletest.net:51233/"  # Testnet client
+            self.xrpLink = self.config["XRPL"]["testnet_link"]
         else:
-            self.xrpLink = "wss://s1.ripple.com/"
+            self.xrpLink = self.config["XRPL"]["mainnet_link"]
         
     async def registerSeed(self, seed) -> dict:
         try:
@@ -153,4 +157,4 @@ class XRPClient:
             return {"result":False, "error":e}
     
     def getTestMode(self) -> bool:
-        return self.xrpLink == "wss://s.altnet.rippletest.net:51233/"
+        return self.xrpLink == self.config["XRPL"]["testnet_link"]
