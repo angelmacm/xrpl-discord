@@ -2,14 +2,15 @@
 A Discord bot designed to facilitate transactions on the XRP Ledger, including sending XRP and custom coins to specified addresses via a CSV file using a slash command in Discord. Developed using Python and Discord's Interaction module, with integration of the XRPL Python module.
 
 ## Features
-Send XRP: Automatically send XRP to multiple addresses specified in a CSV file.
-Send Custom Coins: Send custom coins on the XRP Ledger using trustlines for the 'issuer' parameter.
-Slash Command Integration: Use Discord slash commands to trigger transactions.
-CSV Integration: Import addresses and amounts from a CSV file for bulk transactions.
-Technologies Used
-Programming Language: Python
-Discord Interaction Module: For creating and handling slash commands in Discord.
-XRPL Python Module: For interacting with the XRP Ledger and performing transactions.
+1. Send XRP: Automatically send XRP to multiple addresses specified in a CSV file.
+1. Send Custom Coins: Send custom coins on the XRP Ledger using trustlines for the ```issuer``` parameter.
+2. Slash Command Integration: Use Discord slash commands to trigger transactions.
+3. CSV Integration: Import addresses and amounts from a CSV file for bulk transactions.
+
+## Technologies Used
+1. Programming Language: Python
+2. Discord Interaction Module: For creating and handling slash commands in Discord.
+3. XRPL Python Module: For interacting with the XRP Ledger and performing transactions.
 
 ## Installation
 1. Clone the Repository:<br>Copy code
