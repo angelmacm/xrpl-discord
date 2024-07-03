@@ -76,7 +76,7 @@ class XRPClient:
                     async with AsyncWebsocketClient(self.xrpLink) as client:
                         
                         # Autofill, submit and wait the transaction to be validated
-                        result = await submit_and_wait(transaction=payment, client=client)
+                        result = await submit_and_wait(transaction=payment, client=client, wallet = self.wallet)
                     
                     if result.is_successful():
                         print("Sucess")  if self.verbose else None # For debugging purposes
