@@ -57,7 +57,7 @@ async def on_ready():
             )
         ])
 async def airdrop(ctx: InteractionContext):
-    await ctx.defer(ephemeral=True) # Defer the response to wait for the function to run.
+    await ctx.defer() # Defer the response to wait for the function to run.
         
     csvfile = ""
     statusMessage = await ctx.send(content="Checking parameters...") # Give a quick status update
@@ -185,7 +185,7 @@ async def airdrop(ctx: InteractionContext):
             )
             ])
 async def setTestMode(ctx: InteractionContext):
-    await ctx.defer(ephemeral=True) # Defer the response to wait for the function to run.
+    await ctx.defer() # Defer the response to wait for the function to run.
     
     # Parse the argument and set it to the XRPL Instance
     testMode = ctx.kwargs['testmode']
